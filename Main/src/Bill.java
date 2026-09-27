@@ -36,7 +36,6 @@ public class Bill extends Record {
         this.status = status;
     }
 
-    // Polymorphism: Bill's own version of displayInfo
     @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
