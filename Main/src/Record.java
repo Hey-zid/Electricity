@@ -1,17 +1,18 @@
 public abstract class Record {
-    protected String id;
-
+ 
+    protected String id; // the customer id this record belongs to
+ 
     public Record(String id) {
         this.id = id;
     }
-
+ 
     public String getId() {
         return id;
     }
-
-    // Abstraction: subclasses must define how they display themselves
+ 
+    // Every child class has to say how it prints itself for the reason
     public abstract void displayInfo();
-
-    // Abstraction: subclasses must define how they turn into a file line
+ 
+    // How it turns into one line of text to save in a file must be at any cost
     public abstract String toFileString();
 }
