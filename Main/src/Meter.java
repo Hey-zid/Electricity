@@ -1,4 +1,5 @@
 public class Meter extends Record {
+
     private String meterNumber;
     private int previousReading;
     private int currentReading;
@@ -26,11 +27,11 @@ public class Meter extends Record {
         return currentReading;
     }
 
+    // Simple subtraction - how many units were used since the last reading
     public int getUnitsUsed() {
         return currentReading - previousReading;
     }
 
-    // Polymorphism: Meter's own version of displayInfo
     @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
@@ -40,7 +41,6 @@ public class Meter extends Record {
         System.out.println("Units Used: " + getUnitsUsed());
     }
 
-    // Polymorphism: Meter's own version of toFileString
     @Override
     public String toFileString() {
         return id + "," + meterNumber + "," + previousReading + "," + currentReading;
