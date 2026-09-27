@@ -1,10 +1,11 @@
 public class Customer extends Record {
+
     private String name;
     private String address;
     private String meterNumber;
 
     public Customer(String customerId, String name, String address, String meterNumber) {
-        super(customerId); // sends the ID up to Record
+        super(customerId); // customerId gets stored as "id" in Record
         this.name = name;
         this.address = address;
         this.meterNumber = meterNumber;
@@ -38,7 +39,6 @@ public class Customer extends Record {
         this.meterNumber = meterNumber;
     }
 
-    // Polymorphism: Customer's own version of displayInfo
     @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
@@ -47,7 +47,8 @@ public class Customer extends Record {
         System.out.println("Meter Number: " + meterNumber);
     }
 
-    // Polymorphism: Customer's own version of toFileString
+    // Turns the customer into one comma separated line, e.g:
+    // C001,John Doe,123 Main St,MTR-99
     @Override
     public String toFileString() {
         return id + "," + name + "," + address + "," + meterNumber;
