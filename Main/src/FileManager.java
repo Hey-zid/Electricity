@@ -40,8 +40,7 @@ public class FileManager {
         return lines;
     }
 
-    // Wipes the file and writes the given lines back in, in order.
-    // We use this whenever a line was updated or removed.
+
     private void writeLines(String path, List<String> lines) {
         try (FileWriter writer = new FileWriter(path, false)) {
             for (String line : lines) {
