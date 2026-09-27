@@ -21,14 +21,7 @@ public class FileManager {
         }
     }
 
-    // ---------------------------------------------------------
-    //  Small helper methods used by everything below.
-    //  Keeping the file reading/writing in one place means we
-    //  don't repeat the same try/catch code over and over.
-    // ---------------------------------------------------------
 
-    // Reads every line of a file into a list. Returns an empty
-    // list if the file doesn't exist yet (first time running the app).
     private List<String> readLines(String path) {
         List<String> lines = new ArrayList<>();
         File file = new File(path);
