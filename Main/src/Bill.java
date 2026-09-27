@@ -1,11 +1,15 @@
 public class Bill extends Record {
+
     private String month;
     private int unitsUsed;
     private int reading;
     private String status;
 
-    public Bill(String customerId, String month, int unitsUsed, int reading, String status) {
+    public Bill(String customerId, String month, int unitsUsed,
+                int reading, String status) {
+
         super(customerId);
+
         this.month = month;
         this.unitsUsed = unitsUsed;
         this.reading = reading;
@@ -45,7 +49,6 @@ public class Bill extends Record {
         System.out.println("Status: " + status);
     }
 
-    // Polymorphism: Bill's own version of toFileString
     @Override
     public String toFileString() {
         return id + "," + month + "," + unitsUsed + "," + reading + "," + status;
