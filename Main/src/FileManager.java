@@ -2,46 +2,64 @@ import java.io.*;
 import java.util.*;
 
 public class FileManager {
+
     private static final String CUSTOMER_FILE = "customers.txt";
     private static final String METER_FILE = "meters.txt";
     private static final String BILL_FILE = "bills.txt";
 
+    // Thrown when someone tries to register a customer ID that's already used
     public static class DuplicateCustomerException extends Exception {
         public DuplicateCustomerException(String id) {
             super("Error: Customer ID " + id + " already exists.");
         }
     }
 
+    // Thrown when we look for a customer id and can't find it
     public static class CustomerNotFoundException extends Exception {
         public CustomerNotFoundException(String id) {
             super("Error: Customer with ID " + id + " was not found.");
         }
     }
 
-    // ---------- Generic file helpers (used by all update/delete methods) ----------
+    // ---------------------------------------------------------
+    //  Small helper methods used by everything below.
+    //  Keeping the file reading/writing in one place means we
+    //  don't repeat the same try/catch code over and over.
+    // ---------------------------------------------------------
 
+    // Reads every line of a file into a list. Returns an empty
+    // list if the file doesn't exist yet (first time running the app).
     private List<String> readLines(String path) {
         List<String> lines = new ArrayList<>();
         File file = new File(path);
-        if (!file.exists()) return lines;
+        if (!file.exists()) {
+            return lines;
+        }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-            while ((line = reader.readLine()) != null) lines.add(line);
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
         } catch (IOException e) {
             System.out.println("Error reading " + path + ": " + e.getMessage());
         }
         return lines;
     }
 
+    // Wipes the file and writes the given lines back in, in order.
+    // We use this whenever a line was updated or removed.
     private void writeLines(String path, List<String> lines) {
         try (FileWriter writer = new FileWriter(path, false)) {
-            for (String l : lines) writer.write(l + System.lineSeparator());
+            for (String line : lines) {
+                writer.write(line + System.lineSeparator());
+            }
         } catch (IOException e) {
             System.out.println("Error writing " + path + ": " + e.getMessage());
         }
     }
 
+    // Adds one new line to the end of a file without touching what's already there.
     private void appendLine(String path, String line) {
         try (FileWriter writer = new FileWriter(path, true)) {
             writer.write(line + System.lineSeparator());
@@ -50,43 +68,59 @@ public class FileManager {
         }
     }
 
-    // Replaces the first line whose column[idIndex] matches id with newLine.
-    // If newLine is null, the matching line is removed instead. Returns true if a match was found.
-    private boolean replaceOrDelete(String path, int idIndex, String id, String newLine) {
-        List<String> result = new ArrayList<>();
+    // Looks through a file for the first line whose id column matches "id".
+    // - If newLine is not null, that line gets replaced with newLine.
+    // - If newLine is null, that line just gets removed.
+    // Returns true if a matching line was actually found.
+    private boolean replaceOrDelete(String path, int idColumn, String id, String newLine) {
+        List<String> updatedLines = new ArrayList<>();
         boolean found = false;
 
         for (String line : readLines(path)) {
-            String[] parts = line.split(",");
-            if (parts.length > idIndex && parts[idIndex].equals(id)) {
+            String[] columns = line.split(",");
+            boolean isMatch = columns.length > idColumn && columns[idColumn].equals(id);
+
+            if (isMatch) {
                 found = true;
-                if (newLine != null) result.add(newLine);
+                if (newLine != null) {
+                    updatedLines.add(newLine);
+                }
+                // if newLine is null we simply don't add anything = deleted
             } else {
-                result.add(line);
+                updatedLines.add(line);
             }
         }
 
-        if (found) writeLines(path, result);
+        if (found) {
+            writeLines(path, updatedLines);
+        }
         return found;
     }
 
-    // Removes every line whose column[idIndex] matches id (used when deleting a customer entirely)
-    private void removeAllMatching(String path, int idIndex, String id) {
-        List<String> result = new ArrayList<>();
+    // Removes every line belonging to a given customer id.
+    // Used when a customer is deleted, so all their meter readings
+    // and bills go away with them.
+    private void removeAllMatching(String path, int idColumn, String id) {
+        List<String> keptLines = new ArrayList<>();
         for (String line : readLines(path)) {
-            String[] parts = line.split(",");
-            if (!(parts.length > idIndex && parts[idIndex].equals(id))) {
-                result.add(line);
+            String[] columns = line.split(",");
+            boolean isMatch = columns.length > idColumn && columns[idColumn].equals(id);
+            if (!isMatch) {
+                keptLines.add(line);
             }
         }
-        writeLines(path, result);
+        writeLines(path, keptLines);
     }
 
-    // ---------- CUSTOMER ----------
+    // ---------------------------------------------------------
+    //  CUSTOMER
+    // ---------------------------------------------------------
 
-    public void saveCustomer(Customer c) throws DuplicateCustomerException {
-        if (isCustomerIdTaken(c.getCustomerId())) throw new DuplicateCustomerException(c.getCustomerId());
-        appendLine(CUSTOMER_FILE, c.toFileString());
+    public void saveCustomer(Customer customer) throws DuplicateCustomerException {
+        if (isCustomerIdTaken(customer.getCustomerId())) {
+            throw new DuplicateCustomerException(customer.getCustomerId());
+        }
+        appendLine(CUSTOMER_FILE, customer.toFileString());
     }
 
     public boolean isCustomerIdTaken(String id) {
@@ -95,119 +129,151 @@ public class FileManager {
 
     public Customer findCustomerById(String id) {
         for (String line : readLines(CUSTOMER_FILE)) {
-            String[] p = line.split(",");
-            if (p.length == 4 && p[0].equals(id)) return new Customer(p[0], p[1], p[2], p[3]);
+            String[] columns = line.split(",");
+            if (columns.length == 4 && columns[0].equals(id)) {
+                return new Customer(columns[0], columns[1], columns[2], columns[3]);
+            }
         }
         return null;
     }
 
-    public void updateCustomer(Customer c) throws CustomerNotFoundException {
-        if (!replaceOrDelete(CUSTOMER_FILE, 0, c.getCustomerId(), c.toFileString())) {
-            throw new CustomerNotFoundException(c.getCustomerId());
+    public void updateCustomer(Customer customer) throws CustomerNotFoundException {
+        boolean found = replaceOrDelete(CUSTOMER_FILE, 0, customer.getCustomerId(), customer.toFileString());
+        if (!found) {
+            throw new CustomerNotFoundException(customer.getCustomerId());
         }
     }
 
     public void deleteCustomer(String id) throws CustomerNotFoundException {
-        if (!replaceOrDelete(CUSTOMER_FILE, 0, id, null)) {
+        boolean found = replaceOrDelete(CUSTOMER_FILE, 0, id, null);
+        if (!found) {
             throw new CustomerNotFoundException(id);
         }
+        // also clean up anything else tied to this customer
         removeAllMatching(METER_FILE, 0, id);
         removeAllMatching(BILL_FILE, 0, id);
     }
 
-    // ---------- METER ----------
+    // ---------------------------------------------------------
+    //  METER
+    // ---------------------------------------------------------
 
-    public void saveMeter(Meter m) {
-        appendLine(METER_FILE, m.toFileString());
+    public void saveMeter(Meter meter) {
+        appendLine(METER_FILE, meter.toFileString());
     }
 
-    // Most recent reading for a customer (last matching line in the file)
+    // Gets the most recent reading saved for a customer.
+    // Since readings are appended in order, the last matching
+    // line in the file is simply the newest one.
     public Meter findMeterByCustomerId(String id) {
-        Meter result = null;
+        Meter latest = null;
         for (String line : readLines(METER_FILE)) {
-            String[] p = line.split(",");
-            if (p.length == 4 && p[0].equals(id)) {
-                result = new Meter(p[0], p[1], Integer.parseInt(p[2]), Integer.parseInt(p[3]));
+            String[] columns = line.split(",");
+            if (columns.length == 4 && columns[0].equals(id)) {
+                latest = new Meter(columns[0], columns[1],
+                        Integer.parseInt(columns[2]), Integer.parseInt(columns[3]));
             }
         }
-        return result;
+        return latest;
     }
 
     public List<Meter> findAllMetersByCustomerId(String id) {
         List<Meter> meters = new ArrayList<>();
         for (String line : readLines(METER_FILE)) {
-            String[] p = line.split(",");
-            if (p.length == 4 && p[0].equals(id)) {
-                meters.add(new Meter(p[0], p[1], Integer.parseInt(p[2]), Integer.parseInt(p[3])));
+            String[] columns = line.split(",");
+            if (columns.length == 4 && columns[0].equals(id)) {
+                meters.add(new Meter(columns[0], columns[1],
+                        Integer.parseInt(columns[2]), Integer.parseInt(columns[3])));
             }
         }
         return meters;
     }
 
-    // Oldest reading that has no matching bill yet
+    // Finds the oldest meter reading that hasn't been turned into a bill yet.
+    // We check each reading against the existing bills to see if one already covers it.
     public Meter findNextUnbilledMeter(String id) {
-        List<Bill> bills = findBillsByCustomerId(id);
-        for (Meter m : findAllMetersByCustomerId(id)) {
-            boolean billed = false;
-            for (Bill b : bills) {
-                if (b.getReading() == m.getCurrentReading()) { billed = true; break; }
+        List<Bill> existingBills = findBillsByCustomerId(id);
+
+        for (Meter meter : findAllMetersByCustomerId(id)) {
+            boolean alreadyBilled = false;
+            for (Bill bill : existingBills) {
+                if (bill.getReading() == meter.getCurrentReading()) {
+                    alreadyBilled = true;
+                    break;
+                }
             }
-            if (!billed) return m;
+            if (!alreadyBilled) {
+                return meter;
+            }
         }
         return null;
     }
 
-    // ---------- BILL ----------
+    // ---------------------------------------------------------
+    //  BILL
+    // ---------------------------------------------------------
 
-    public void saveBill(Bill b) {
-        appendLine(BILL_FILE, b.toFileString());
+    public void saveBill(Bill bill) {
+        appendLine(BILL_FILE, bill.toFileString());
     }
 
     public List<Bill> findBillsByCustomerId(String id) {
         List<Bill> bills = new ArrayList<>();
         for (String line : readLines(BILL_FILE)) {
-            String[] p = line.split(",");
-            if (p.length == 5 && p[0].equals(id)) {
-                bills.add(new Bill(p[0], p[1], Integer.parseInt(p[2]), Integer.parseInt(p[3]), p[4]));
+            String[] columns = line.split(",");
+            if (columns.length == 5 && columns[0].equals(id)) {
+                bills.add(new Bill(columns[0], columns[1],
+                        Integer.parseInt(columns[2]), Integer.parseInt(columns[3]), columns[4]));
             }
         }
         return bills;
     }
 
-    // Bills are matched by customerId + month together, so this stays a manual loop
+    // A bill is identified by customer id + month together, so this one
+    // needs its own loop instead of reusing replaceOrDelete.
     public boolean updateBillStatus(String id, String month, String newStatus) {
-        List<String> result = new ArrayList<>();
+        List<String> updatedLines = new ArrayList<>();
         boolean found = false;
 
         for (String line : readLines(BILL_FILE)) {
-            String[] p = line.split(",");
-            if (p.length == 5 && p[0].equals(id) && p[1].equalsIgnoreCase(month)) {
-                Bill updated = new Bill(p[0], p[1], Integer.parseInt(p[2]), Integer.parseInt(p[3]), newStatus);
-                result.add(updated.toFileString());
+            String[] columns = line.split(",");
+            boolean isMatch = columns.length == 5 && columns[0].equals(id) && columns[1].equalsIgnoreCase(month);
+
+            if (isMatch) {
+                Bill updatedBill = new Bill(columns[0], columns[1],
+                        Integer.parseInt(columns[2]), Integer.parseInt(columns[3]), newStatus);
+                updatedLines.add(updatedBill.toFileString());
                 found = true;
             } else {
-                result.add(line);
+                updatedLines.add(line);
             }
         }
 
-        if (found) writeLines(BILL_FILE, result);
+        if (found) {
+            writeLines(BILL_FILE, updatedLines);
+        }
         return found;
     }
 
     public boolean deleteBill(String id, String month) {
-        List<String> result = new ArrayList<>();
+        List<String> updatedLines = new ArrayList<>();
         boolean found = false;
 
         for (String line : readLines(BILL_FILE)) {
-            String[] p = line.split(",");
-            if (p.length == 5 && p[0].equals(id) && p[1].equalsIgnoreCase(month)) {
+            String[] columns = line.split(",");
+            boolean isMatch = columns.length == 5 && columns[0].equals(id) && columns[1].equalsIgnoreCase(month);
+
+            if (isMatch) {
                 found = true;
+                // don't add it back to updatedLines = it's deleted
             } else {
-                result.add(line);
+                updatedLines.add(line);
             }
         }
 
-        if (found) writeLines(BILL_FILE, result);
+        if (found) {
+            writeLines(BILL_FILE, updatedLines);
+        }
         return found;
     }
 }
