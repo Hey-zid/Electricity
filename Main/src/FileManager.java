@@ -97,9 +97,7 @@ public class FileManager {
         return found;
     }
 
-    // Removes every line belonging to a given customer id.
-    // Used when a customer is deleted, so all their meter readings
-    // and bills go away with them.
+
     private void removeAllMatching(String path, int idColumn, String id) {
         List<String> keptLines = new ArrayList<>();
         for (String line : readLines(path)) {
