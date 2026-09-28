@@ -21,24 +21,17 @@ public class FileManager {
 
     private List<String> readLines(String fileName) {
         List<String> lines = new ArrayList<>();
-
         File file = new File(fileName);
 
         if (!file.exists()) {
             return lines;
         }
 
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-
             while ((line = reader.readLine()) != null) {
                 lines.add(line);
             }
-
-            reader.close();
-
         } catch (IOException e) {
             System.out.println("Error reading " + fileName + ": " + e.getMessage());
         }
@@ -47,87 +40,82 @@ public class FileManager {
     }
 
     private void writeLines(String fileName, List<String> lines) {
-        try {
-            FileWriter writer = new FileWriter(fileName);
-
+        try (FileWriter writer = new FileWriter(fileName)) {
             for (String line : lines) {
                 writer.write(line + System.lineSeparator());
             }
-
-            writer.close();
-
         } catch (IOException e) {
             System.out.println("Error writing " + fileName + ": " + e.getMessage());
         }
     }
 
     private void appendLine(String fileName, String line) {
-        try {
-            FileWriter writer = new FileWriter(fileName, true);
-
+        try (FileWriter writer = new FileWriter(fileName, true)) {
             writer.write(line + System.lineSeparator());
-
-            writer.close();
-
         } catch (IOException e) {
             System.out.println("Error saving to " + fileName + ": " + e.getMessage());
         }
     }
 
-    private boolean replaceOrDelete(
-            String fileName,
-            int idColumn,
-            String id,
-            String newLine) {
+    private List<String[]> readRowsForCustomer(String fileName, int columnCount, String id) {
+        List<String[]> rows = new ArrayList<>();
 
-        List<String> lines = readLines(fileName);
+        for (String line : readLines(fileName)) {
+            String[] data = line.split(",");
+            if (data.length == columnCount && data[0].equals(id)) {
+                rows.add(data);
+            }
+        }
+
+        return rows;
+    }
+
+    private boolean replaceOrDeleteCustomerLine(String id, String newLine) {
         List<String> newLines = new ArrayList<>();
-
         boolean found = false;
 
-        for (String line : lines) {
-
+        for (String line : readLines(CUSTOMER_FILE)) {
             String[] data = line.split(",");
 
-            if (data.length > idColumn && data[idColumn].equals(id)) {
-
+            if (data.length > 0 && data[0].equals(id)) {
                 found = true;
-
                 if (newLine != null) {
                     newLines.add(newLine);
                 }
-            } 
-            else {
+            } else {
                 newLines.add(line);
             }
         }
 
         if (found) {
-            writeLines(fileName, newLines);
+            writeLines(CUSTOMER_FILE, newLines);
         }
 
         return found;
     }
 
-    private void removeAllMatching(String fileName, int idColumn, String id) {
-
-        List<String> lines = readLines(fileName);
+    private void removeAllForCustomer(String fileName, String id) {
         List<String> newLines = new ArrayList<>();
 
-        for (String line : lines) {
-
+        for (String line : readLines(fileName)) {
             String[] data = line.split(",");
-
-            if (data.length > idColumn && !data[idColumn].equals(id)) {
+            if (data.length > 0 && !data[0].equals(id)) {
                 newLines.add(line);
             }
         }
 
         writeLines(fileName, newLines);
     }
-    public void saveCustomer(Customer customer)
-            throws DuplicateCustomerException {
 
+    private Meter toMeter(String[] data) {
+        return new Meter(data[0], data[1], Integer.parseInt(data[2]), Integer.parseInt(data[3]));
+    }
+
+    private Bill toBill(String[] data) {
+        return new Bill(data[0], data[1], Integer.parseInt(data[2]), Integer.parseInt(data[3]), data[4]);
+    }
+
+    public void saveCustomer(Customer customer) throws DuplicateCustomerException {
         String id = customer.getCustomerId();
 
         if (isCustomerIdTaken(id)) {
@@ -142,127 +130,62 @@ public class FileManager {
     }
 
     public Customer findCustomerById(String id) {
+        List<String[]> rows = readRowsForCustomer(CUSTOMER_FILE, 4, id);
 
-        for (String line : readLines(CUSTOMER_FILE)) {
-
-            String[] data = line.split(",");
-
-            if (data.length == 4 && data[0].equals(id)) {
-                return new Customer(
-                        data[0],
-                        data[1],
-                        data[2],
-                        data[3]
-                );
-            }
+        if (rows.isEmpty()) {
+            return null;
         }
 
-        return null;
+        String[] data = rows.get(0);
+        return new Customer(data[0], data[1], data[2], data[3]);
     }
 
-    public void updateCustomer(Customer customer)
-            throws CustomerNotFoundException {
-
+    public void updateCustomer(Customer customer) throws CustomerNotFoundException {
         String id = customer.getCustomerId();
 
-        boolean found = replaceOrDelete(
-                CUSTOMER_FILE,
-                0,
-                id,
-                customer.toFileString()
-        );
-
-        if (!found) {
+        if (!replaceOrDeleteCustomerLine(id, customer.toFileString())) {
             throw new CustomerNotFoundException(id);
         }
     }
 
-    public void deleteCustomer(String id)
-            throws CustomerNotFoundException {
-
-        boolean found = replaceOrDelete(
-                CUSTOMER_FILE,
-                0,
-                id,
-                null
-        );
-
-        if (!found) {
+    public void deleteCustomer(String id) throws CustomerNotFoundException {
+        if (!replaceOrDeleteCustomerLine(id, null)) {
             throw new CustomerNotFoundException(id);
         }
 
-        removeAllMatching(METER_FILE, 0, id);
-        removeAllMatching(BILL_FILE, 0, id);
+        removeAllForCustomer(METER_FILE, id);
+        removeAllForCustomer(BILL_FILE, id);
     }
 
     public void saveMeter(Meter meter) {
         appendLine(METER_FILE, meter.toFileString());
     }
 
-    public Meter findMeterByCustomerId(String id) {
-
-        Meter latest = null;
-
-        for (String line : readLines(METER_FILE)) {
-
-            String[] data = line.split(",");
-
-            if (data.length == 4 && data[0].equals(id)) {
-
-                latest = new Meter(
-                        data[0],
-                        data[1],
-                        Integer.parseInt(data[2]),
-                        Integer.parseInt(data[3])
-                );
-            }
-        }
-
-        return latest;
-    }
-
     public List<Meter> findAllMetersByCustomerId(String id) {
-
         List<Meter> meters = new ArrayList<>();
 
-        for (String line : readLines(METER_FILE)) {
-
-            String[] data = line.split(",");
-
-            if (data.length == 4 && data[0].equals(id)) {
-
-                Meter meter = new Meter(
-                        data[0],
-                        data[1],
-                        Integer.parseInt(data[2]),
-                        Integer.parseInt(data[3])
-                );
-
-                meters.add(meter);
-            }
+        for (String[] data : readRowsForCustomer(METER_FILE, 4, id)) {
+            meters.add(toMeter(data));
         }
 
         return meters;
     }
 
-    public Meter findNextUnbilledMeter(String id) {
-
-        List<Bill> bills = findBillsByCustomerId(id);
+    public Meter findMeterByCustomerId(String id) {
         List<Meter> meters = findAllMetersByCustomerId(id);
 
-        for (Meter meter : meters) {
+        if (meters.isEmpty()) {
+            return null;
+        }
 
-            boolean billed = false;
+        return meters.get(meters.size() - 1);
+    }
 
-            for (Bill bill : bills) {
+    public Meter findNextUnbilledMeter(String id) {
+        List<Bill> bills = findBillsByCustomerId(id);
 
-                if (bill.getReading() == meter.getCurrentReading()) {
-                    billed = true;
-                    break;
-                }
-            }
-
-            if (!billed) {
+        for (Meter meter : findAllMetersByCustomerId(id)) {
+            if (!isBilled(meter, bills)) {
                 return meter;
             }
         }
@@ -270,99 +193,59 @@ public class FileManager {
         return null;
     }
 
+    private boolean isBilled(Meter meter, List<Bill> bills) {
+        for (Bill bill : bills) {
+            if (bill.getReading() == meter.getCurrentReading()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void saveBill(Bill bill) {
         appendLine(BILL_FILE, bill.toFileString());
     }
 
     public List<Bill> findBillsByCustomerId(String id) {
-
         List<Bill> bills = new ArrayList<>();
 
-        for (String line : readLines(BILL_FILE)) {
-
-            String[] data = line.split(",");
-
-            if (data.length == 5 && data[0].equals(id)) {
-
-                Bill bill = new Bill(
-                        data[0],
-                        data[1],
-                        Integer.parseInt(data[2]),
-                        Integer.parseInt(data[3]),
-                        data[4]
-                );
-
-                bills.add(bill);
-            }
+        for (String[] data : readRowsForCustomer(BILL_FILE, 5, id)) {
+            bills.add(toBill(data));
         }
 
         return bills;
     }
 
-    public boolean updateBillStatus(
-            String id,
-            String month,
-            String newStatus) {
-
-        List<String> lines = readLines(BILL_FILE);
-        List<String> newLines = new ArrayList<>();
-
-        boolean found = false;
-
-        for (String line : lines) {
-
-            String[] data = line.split(",");
-
-            boolean match =
-                    data.length == 5
-                    && data[0].equals(id)
-                    && data[1].equalsIgnoreCase(month);
-
-            if (match) {
-
-                Bill bill = new Bill(
-                        data[0],
-                        data[1],
-                        Integer.parseInt(data[2]),
-                        Integer.parseInt(data[3]),
-                        newStatus
-                );
-
-                newLines.add(bill.toFileString());
-                found = true;
-
-            } else {
-                newLines.add(line);
-            }
-        }
-
-        if (found) {
-            writeLines(BILL_FILE, newLines);
-        }
-
-        return found;
+    public boolean updateBillStatus(String id, String month, String newStatus) {
+        return changeBill(id, month, newStatus);
     }
 
     public boolean deleteBill(String id, String month) {
+        return changeBill(id, month, null);
+    }
 
-        List<String> lines = readLines(BILL_FILE);
+    private boolean changeBill(String id, String month, String newStatus) {
         List<String> newLines = new ArrayList<>();
-
         boolean found = false;
 
-        for (String line : lines) {
-
+        for (String line : readLines(BILL_FILE)) {
             String[] data = line.split(",");
 
-            boolean match =
-                    data.length == 5
+            boolean isMatch = data.length == 5
                     && data[0].equals(id)
                     && data[1].equalsIgnoreCase(month);
 
-            if (match) {
-                found = true;
-            } else {
+            if (!isMatch) {
                 newLines.add(line);
+                continue;
+            }
+
+            found = true;
+
+            if (newStatus != null) {
+                Bill updatedBill = new Bill(data[0], data[1],
+                        Integer.parseInt(data[2]), Integer.parseInt(data[3]), newStatus);
+                newLines.add(updatedBill.toFileString());
             }
         }
 
