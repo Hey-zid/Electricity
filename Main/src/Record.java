@@ -1,6 +1,6 @@
 public abstract class Record {
 
-    protected String ;
+    protected String id;
 
     public Record(String id) {
         this.id = id;
