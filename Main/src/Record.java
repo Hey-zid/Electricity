@@ -1,6 +1,6 @@
 public abstract class Record {
 
-    protected String id;
+    protected String ;
 
     public Record(String id) {
         this.id = id;
@@ -10,7 +10,7 @@ public abstract class Record {
         return id;
     }
 
-    public abstract void displayInfo():
+    public abstract void displayInfo();
     public abstract String toFileString();
     
 }
