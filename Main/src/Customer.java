@@ -1,10 +1,14 @@
+/**
+ * A person who uses electricity. Everything except the ID can be edited later.
+ */
 public class Customer extends Record {
+
     private String name;
     private String address;
     private String meterNumber;
 
     public Customer(String customerId, String name, String address, String meterNumber) {
-        super(customerId); // sends the ID up to Record
+        super(customerId);
         this.name = name;
         this.address = address;
         this.meterNumber = meterNumber;
@@ -38,7 +42,6 @@ public class Customer extends Record {
         this.meterNumber = meterNumber;
     }
 
-    // Polymorphism: Customer's own version of displayInfo
     @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
@@ -47,9 +50,9 @@ public class Customer extends Record {
         System.out.println("Meter Number: " + meterNumber);
     }
 
-    // Polymorphism: Customer's own version of toFileString
+    /** Saved as: id,name,address,meterNumber */
     @Override
     public String toFileString() {
-        return id + "," + name + "," + address + "," + meterNumber;
+        return String.join(FIELD_SEPARATOR, id, name, address, meterNumber);
     }
 }
