@@ -7,21 +7,18 @@ public class FileManager {
     private static final String METER_FILE = "meters.txt";
     private static final String BILL_FILE = "bills.txt";
 
-    // Exception for duplicate customer ID
     public static class DuplicateCustomerException extends Exception {
         public DuplicateCustomerException(String id) {
             super("Error: Customer ID " + id + " already exists.");
         }
     }
 
-    // Exception for customer not found
     public static class CustomerNotFoundException extends Exception {
         public CustomerNotFoundException(String id) {
             super("Error: Customer with ID " + id + " was not found.");
         }
     }
 
-    // Read all lines from a file
     private List<String> readLines(String fileName) {
         List<String> lines = new ArrayList<>();
 
@@ -49,7 +46,6 @@ public class FileManager {
         return lines;
     }
 
-    // Write all lines to a file
     private void writeLines(String fileName, List<String> lines) {
         try {
             FileWriter writer = new FileWriter(fileName);
@@ -65,7 +61,6 @@ public class FileManager {
         }
     }
 
-    // Add one line to a file
     private void appendLine(String fileName, String line) {
         try {
             FileWriter writer = new FileWriter(fileName, true);
@@ -79,7 +74,6 @@ public class FileManager {
         }
     }
 
-    // Replace or delete a line using an ID
     private boolean replaceOrDelete(
             String fileName,
             int idColumn,
@@ -99,14 +93,11 @@ public class FileManager {
 
                 found = true;
 
-                // If newLine is not null, replace the old line
                 if (newLine != null) {
                     newLines.add(newLine);
                 }
-
-                // If newLine is null, the line is deleted
-
-            } else {
+            } 
+            else {
                 newLines.add(line);
             }
         }
@@ -118,7 +109,6 @@ public class FileManager {
         return found;
     }
 
-    // Delete all lines with a matching ID
     private void removeAllMatching(String fileName, int idColumn, String id) {
 
         List<String> lines = readLines(fileName);
@@ -135,11 +125,6 @@ public class FileManager {
 
         writeLines(fileName, newLines);
     }
-
-    // ---------------------------------------------------------
-    // CUSTOMER
-    // ---------------------------------------------------------
-
     public void saveCustomer(Customer customer)
             throws DuplicateCustomerException {
 
@@ -206,14 +191,9 @@ public class FileManager {
             throw new CustomerNotFoundException(id);
         }
 
-        // Delete related meter and bill records
         removeAllMatching(METER_FILE, 0, id);
         removeAllMatching(BILL_FILE, 0, id);
     }
-
-    // ---------------------------------------------------------
-    // METER
-    // ---------------------------------------------------------
 
     public void saveMeter(Meter meter) {
         appendLine(METER_FILE, meter.toFileString());
@@ -289,10 +269,6 @@ public class FileManager {
 
         return null;
     }
-
-    // ---------------------------------------------------------
-    // BILL
-    // ---------------------------------------------------------
 
     public void saveBill(Bill bill) {
         appendLine(BILL_FILE, bill.toFileString());
