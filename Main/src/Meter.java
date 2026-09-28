@@ -27,7 +27,6 @@ public class Meter extends Record {
         return currentReading;
     }
 
-    // how many units were used since the last reading
     public int getUnitsUsed() {
         return currentReading - previousReading;
     }
