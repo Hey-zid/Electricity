@@ -114,8 +114,6 @@ public class FileManager {
         removeAllMatching(BILL_FILE, 0, id);
     }
 
-    // ---------- METER ----------
-
     public void saveMeter(Meter m) {
         appendLine(METER_FILE, m.toFileString());
     }
