@@ -5,7 +5,7 @@ import java.util.List;
 public class Main extends JFrame {
 
     private final FileManager fileManager = new FileManager();
-    private static final double RATE_PER_UNIT = 5.0; // taka per unit
+    private static final double RATE_PER_UNIT = 5.0;
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel container = new JPanel(cardLayout);
@@ -14,10 +14,8 @@ public class Main extends JFrame {
         setTitle("Electricity Management System");
         setSize(650, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // centers the window on screen
-
-        // Build every page once and add them all to the card container.
-        // Each one gets a name so we can call cardLayout.show(container, name) later.
+        setLocationRelativeTo(null); 
+        
         container.add(buildHomePanel(), "home");
         container.add(buildRegisterPanel(), "register");
         container.add(buildSearchPanel(), "search");
@@ -33,21 +31,12 @@ public class Main extends JFrame {
         cardLayout.show(container, "home");
     }
 
-    // ============================================================
-    //  Little helpers reused by more than one page, so we only
-    //  write this layout code once instead of copy-pasting it.
-    // ============================================================
-
-    // Every page has a "Back to Home" button that does the same thing.
     private JButton buildBackButton() {
         JButton backButton = new JButton("Back to Home");
         backButton.addActionListener(e -> cardLayout.show(container, "home"));
         return backButton;
     }
 
-    // Puts together the standard page layout: a title up top, the
-    // input form and the output box in the middle, and the buttons
-    // (whatever action buttons the page needs, plus Back) at the bottom.
     private JPanel buildPageFrame(String title, JComponent form, JTextArea output, JButton... actionButtons) {
         JPanel page = new JPanel(new BorderLayout(10, 10));
         page.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -70,10 +59,6 @@ public class Main extends JFrame {
 
         return page;
     }
-
-    // ============================================================
-    //  HOME PAGE
-    // ============================================================
 
     private JPanel buildHomePanel() {
         JPanel page = new JPanel(new BorderLayout());
@@ -117,10 +102,6 @@ public class Main extends JFrame {
         return page;
     }
 
-    // ============================================================
-    //  CUSTOMER: REGISTER
-    // ============================================================
-
     private JPanel buildRegisterPanel() {
         JPanel form = new JPanel(new GridLayout(4, 2, 5, 5));
         JTextField idField = new JTextField();
@@ -148,7 +129,6 @@ public class Main extends JFrame {
                 fileManager.saveCustomer(newCustomer);
                 output.setText("Customer registered successfully!");
 
-                // clear the form so it's ready for the next customer
                 idField.setText("");
                 nameField.setText("");
                 addressField.setText("");
@@ -160,10 +140,6 @@ public class Main extends JFrame {
 
         return buildPageFrame("Register New Customer", form, output, registerButton);
     }
-
-    // ============================================================
-    //  CUSTOMER: SEARCH
-    // ============================================================
 
     private JPanel buildSearchPanel() {
         JPanel form = new JPanel(new GridLayout(1, 2, 5, 5));
@@ -190,10 +166,6 @@ public class Main extends JFrame {
         return buildPageFrame("Search Customer", form, output, searchButton);
     }
 
-    // ============================================================
-    //  CUSTOMER: UPDATE
-    // ============================================================
-
     private JPanel buildUpdatePanel() {
         JPanel form = new JPanel(new GridLayout(4, 2, 5, 5));
         JTextField idField = new JTextField();
@@ -216,8 +188,6 @@ public class Main extends JFrame {
         JButton loadButton = new JButton("Load Current Info");
         JButton updateButton = new JButton("Update");
 
-        // Loads the customer's current details into the fields first,
-        // so the user can see what's there before changing anything.
         loadButton.addActionListener(e -> {
             Customer customer = fileManager.findCustomerById(idField.getText());
             if (customer == null) {
@@ -243,10 +213,6 @@ public class Main extends JFrame {
 
         return buildPageFrame("Update Customer", form, output, loadButton, updateButton);
     }
-
-    // ============================================================
-    //  CUSTOMER: DELETE
-    // ============================================================
 
     private JPanel buildDeletePanel() {
         JPanel form = new JPanel(new GridLayout(1, 2, 5, 5));
@@ -279,10 +245,6 @@ public class Main extends JFrame {
 
         return buildPageFrame("Delete Customer", form, output, deleteButton);
     }
-
-    // ============================================================
-    //  METER: ADD READING
-    // ============================================================
 
     private JPanel buildMeterPanel() {
         JPanel form = new JPanel(new GridLayout(2, 2, 5, 5));
@@ -330,10 +292,6 @@ public class Main extends JFrame {
 
         return buildPageFrame("Add Meter Reading", form, output, addButton);
     }
-
-    // ============================================================
-    //  BILL: ADD
-    // ============================================================
 
     private JPanel buildBillAddPanel() {
         JPanel form = new JPanel(new GridLayout(3, 2, 5, 5));
@@ -384,11 +342,7 @@ public class Main extends JFrame {
 
         return buildPageFrame("Add Monthly Bill", form, output, addButton);
     }
-
-    // ============================================================
-    //  BILL: UPDATE STATUS
-    // ============================================================
-
+    
     private JPanel buildBillUpdatePanel() {
         JPanel form = new JPanel(new GridLayout(3, 2, 5, 5));
         JTextField idField = new JTextField();
@@ -419,10 +373,6 @@ public class Main extends JFrame {
         return buildPageFrame("Update Bill Status", form, output, updateButton);
     }
 
-    // ============================================================
-    //  BILL: DELETE
-    // ============================================================
-
     private JPanel buildBillDeletePanel() {
         JPanel form = new JPanel(new GridLayout(2, 2, 5, 5));
         JTextField idField = new JTextField();
@@ -444,10 +394,6 @@ public class Main extends JFrame {
 
         return buildPageFrame("Delete Bill", form, output, deleteButton);
     }
-
-    // ============================================================
-    //  ANNUAL REPORT
-    // ============================================================
 
     private JPanel buildReportPanel() {
         JPanel form = new JPanel(new GridLayout(1, 2, 5, 5));
