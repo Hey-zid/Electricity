@@ -18,7 +18,7 @@ public class FileManager {
         }
     }
 
-    // ---------- Generic file helpers (used by all update/delete methods) ----------
+
 
     private List<String> readLines(String path) {
         List<String> lines = new ArrayList<>();
@@ -50,8 +50,7 @@ public class FileManager {
         }
     }
 
-    // Replaces the first line whose column[idIndex] matches id with newLine.
-    // If newLine is null, the matching line is removed instead. Returns true if a match was found.
+
     private boolean replaceOrDelete(String path, int idIndex, String id, String newLine) {
         List<String> result = new ArrayList<>();
         boolean found = false;
@@ -70,7 +69,7 @@ public class FileManager {
         return found;
     }
 
-    // Removes every line whose column[idIndex] matches id (used when deleting a customer entirely)
+
     private void removeAllMatching(String path, int idIndex, String id) {
         List<String> result = new ArrayList<>();
         for (String line : readLines(path)) {
@@ -82,7 +81,7 @@ public class FileManager {
         writeLines(path, result);
     }
 
-    // ---------- CUSTOMER ----------
+
 
     public void saveCustomer(Customer c) throws DuplicateCustomerException {
         if (isCustomerIdTaken(c.getCustomerId())) throw new DuplicateCustomerException(c.getCustomerId());
@@ -115,13 +114,10 @@ public class FileManager {
         removeAllMatching(BILL_FILE, 0, id);
     }
 
-    // ---------- METER ----------
-
     public void saveMeter(Meter m) {
         appendLine(METER_FILE, m.toFileString());
     }
 
-    // Most recent reading for a customer (last matching line in the file)
     public Meter findMeterByCustomerId(String id) {
         Meter result = null;
         for (String line : readLines(METER_FILE)) {
@@ -144,7 +140,6 @@ public class FileManager {
         return meters;
     }
 
-    // Oldest reading that has no matching bill yet
     public Meter findNextUnbilledMeter(String id) {
         List<Bill> bills = findBillsByCustomerId(id);
         for (Meter m : findAllMetersByCustomerId(id)) {
@@ -156,8 +151,6 @@ public class FileManager {
         }
         return null;
     }
-
-    // ---------- BILL ----------
 
     public void saveBill(Bill b) {
         appendLine(BILL_FILE, b.toFileString());
@@ -173,8 +166,6 @@ public class FileManager {
         }
         return bills;
     }
-
-    // Bills are matched by customerId + month together, so this stays a manual loop
     public boolean updateBillStatus(String id, String month, String newStatus) {
         List<String> result = new ArrayList<>();
         boolean found = false;
