@@ -1,6 +1,6 @@
 public abstract class Record {
 
-    protected String id; // the customer id this record belongs to
+    protected String id;
 
     public Record(String id) {
         this.id = id;
@@ -10,9 +10,7 @@ public abstract class Record {
         return id;
     }
 
-    // Every child class has to say how it prints itself...
     public abstract void displayInfo();
 
-    // ...and how it turns into one line of text to save in a file.
     public abstract String toFileString();
 }
