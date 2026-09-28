@@ -5,11 +5,8 @@ public class Bill extends Record {
     private int reading;
     private String status;
 
-    public Bill(String customerId, String month, int unitsUsed,
-                int reading, String status) {
-
+    public Bill(String customerId, String month, int unitsUsed, int reading, String status) {
         super(customerId);
-
         this.month = month;
         this.unitsUsed = unitsUsed;
         this.reading = reading;
@@ -40,7 +37,6 @@ public class Bill extends Record {
         this.status = status;
     }
 
-    @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
         System.out.println("Month: " + month);
@@ -49,7 +45,6 @@ public class Bill extends Record {
         System.out.println("Status: " + status);
     }
 
-    @Override
     public String toFileString() {
         return id + "," + month + "," + unitsUsed + "," + reading + "," + status;
     }
