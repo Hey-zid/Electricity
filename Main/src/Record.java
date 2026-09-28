@@ -11,6 +11,6 @@ public abstract class Record {
     }
 
     public abstract void displayInfo();
-    public abstract String toFileString();
+    
     
 }
