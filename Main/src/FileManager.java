@@ -69,7 +69,7 @@ public class FileManager {
         return found;
     }
 
-    // Removes every line whose column[idIndex] matches id (used when deleting a customer entirely)
+
     private void removeAllMatching(String path, int idIndex, String id) {
         List<String> result = new ArrayList<>();
         for (String line : readLines(path)) {
