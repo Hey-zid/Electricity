@@ -81,7 +81,7 @@ public class FileManager {
         writeLines(path, result);
     }
 
-    // ---------- CUSTOMER ----------
+
 
     public void saveCustomer(Customer c) throws DuplicateCustomerException {
         if (isCustomerIdTaken(c.getCustomerId())) throw new DuplicateCustomerException(c.getCustomerId());
