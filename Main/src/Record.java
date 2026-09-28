@@ -9,5 +9,7 @@ public abstract class Record {
     public String getId() {
         return id;
     }
+    public abstract void displayInfo();
+    public abstract String toFileString();
 
 }
