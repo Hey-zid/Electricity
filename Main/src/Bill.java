@@ -1,8 +1,13 @@
+/**
+ * A monthly bill for one customer. Only the payment status can change
+ * after the bill is created (for example, from "Unpaid" to "Paid").
+ */
 public class Bill extends Record {
-    private String month;
-    private int unitsUsed;
-    private int reading;
-    private String status;
+
+    private final String month;
+    private final int unitsUsed;
+    private final int reading;   // the meter's current reading this bill was made from
+    private String status;       // "Paid" or "Unpaid"
 
     public Bill(String customerId, String month, int unitsUsed, int reading, String status) {
         super(customerId);
@@ -36,7 +41,6 @@ public class Bill extends Record {
         this.status = status;
     }
 
-    // Polymorphism: Bill's own version of displayInfo
     @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
@@ -46,9 +50,10 @@ public class Bill extends Record {
         System.out.println("Status: " + status);
     }
 
-    // Polymorphism: Bill's own version of toFileString
+    /** Saved as: id,month,unitsUsed,reading,status */
     @Override
     public String toFileString() {
-        return id + "," + month + "," + unitsUsed + "," + reading + "," + status;
+        return String.join(FIELD_SEPARATOR, id, month,
+                String.valueOf(unitsUsed), String.valueOf(reading), status);
     }
 }

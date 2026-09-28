@@ -1,8 +1,12 @@
+/**
+ * One meter reading for a customer. Once saved, a reading never changes.
+ * Units used is simply the current reading minus the previous one.
+ */
 public class Meter extends Record {
 
-    private String meterNumber;
-    private int previousReading;
-    private int currentReading;
+    private final String meterNumber;
+    private final int previousReading;
+    private final int currentReading;
 
     public Meter(String customerId, String meterNumber, int previousReading, int currentReading) {
         super(customerId);
@@ -30,6 +34,8 @@ public class Meter extends Record {
     public int getUnitsUsed() {
         return currentReading - previousReading;
     }
+
+    @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
         System.out.println("Meter Number: " + meterNumber);
@@ -38,7 +44,10 @@ public class Meter extends Record {
         System.out.println("Units Used: " + getUnitsUsed());
     }
 
+    /** Saved as: id,meterNumber,previousReading,currentReading */
+    @Override
     public String toFileString() {
-        return id + "," + meterNumber + "," + previousReading + "," + currentReading;
+        return String.join(FIELD_SEPARATOR, id, meterNumber,
+                String.valueOf(previousReading), String.valueOf(currentReading));
     }
 }
