@@ -10,7 +10,4 @@ public abstract class Record {
         return id;
     }
 
-    public abstract void displayInfo();
-
-    public abstract String toFileString();
 }
