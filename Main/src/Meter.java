@@ -39,7 +39,7 @@ public class Meter extends Record {
         System.out.println("Meter Number: " + meterNumber);
         System.out.println("Previous Reading: " + previousReading);
         System.out.println("Current Reading: " + currentReading);
-        System.out.println("Units Used: " + getUnitsUsed());
+        System.out.println("Total Units Used: " + getUnitsUsed());
     }
 
 
