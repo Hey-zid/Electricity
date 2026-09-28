@@ -1,382 +1,269 @@
 import java.io.*;
 import java.util.*;
 
+/**
+ * The only class that touches the text files. Everything else asks
+ * FileManager to save, find, update or delete a record — nobody else
+ * opens customers.txt, meters.txt or bills.txt directly.
+ */
 public class FileManager {
 
     private static final String CUSTOMER_FILE = "customers.txt";
     private static final String METER_FILE = "meters.txt";
     private static final String BILL_FILE = "bills.txt";
 
-    // Exception for duplicate customer
+    /** Thrown when a customer ID is registered twice. */
     public static class DuplicateCustomerException extends Exception {
         public DuplicateCustomerException(String id) {
             super("Error: Customer ID " + id + " already exists.");
         }
     }
 
-    // Exception for customer not found
+    /** Thrown when a customer ID can't be found. */
     public static class CustomerNotFoundException extends Exception {
         public CustomerNotFoundException(String id) {
             super("Error: Customer with ID " + id + " was not found.");
         }
     }
 
-    // Read all lines from a file
+    // ================= LOW-LEVEL FILE I/O =================
+    // These four methods are the only code that reads or writes a file.
+    // Everything above them works with lines and objects instead.
+
     private List<String> readLines(String fileName) {
-        List<String> lines = new ArrayList<>();
-
         File file = new File(fileName);
-
         if (!file.exists()) {
-            return lines;
+            return new ArrayList<>();
         }
 
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(line);
             }
-
-            reader.close();
-
         } catch (IOException e) {
             System.out.println("Error reading " + fileName + ": " + e.getMessage());
         }
-
         return lines;
     }
 
-    // Write all lines to a file
     private void writeLines(String fileName, List<String> lines) {
-        try {
-            FileWriter writer = new FileWriter(fileName);
-
+        try (FileWriter writer = new FileWriter(fileName)) {
             for (String line : lines) {
                 writer.write(line + System.lineSeparator());
             }
-
-            writer.close();
-
         } catch (IOException e) {
             System.out.println("Error writing " + fileName + ": " + e.getMessage());
         }
     }
 
-    // Add one line at the end of a file
     private void appendLine(String fileName, String line) {
-        try {
-            FileWriter writer = new FileWriter(fileName, true);
-
+        try (FileWriter writer = new FileWriter(fileName, true)) {
             writer.write(line + System.lineSeparator());
-
-            writer.close();
-
         } catch (IOException e) {
             System.out.println("Error saving to " + fileName + ": " + e.getMessage());
         }
     }
 
-    // Find rows that belong to a customer
-    private List<String[]> readRowsForCustomer(
-            String fileName, int columnCount, String id) {
-
+    /** Every row in fileName whose first column matches id. */
+    private List<String[]> readRowsForCustomer(String fileName, int columnCount, String id) {
         List<String[]> rows = new ArrayList<>();
-
-        List<String> lines = readLines(fileName);
-
-        for (String line : lines) {
+        for (String line : readLines(fileName)) {
             String[] data = line.split(",");
-
             if (data.length == columnCount && data[0].equals(id)) {
                 rows.add(data);
             }
         }
-
         return rows;
     }
 
-    // Update or delete a customer
+    // ================= SHARED UPDATE/DELETE LOGIC =================
+    // Both "update a customer" and "delete a customer" rewrite the
+    // customer file with one line changed or removed, so they share
+    // this helper. Passing newLine = null means "delete this line".
+
     private boolean replaceOrDeleteCustomerLine(String id, String newLine) {
-
         List<String> oldLines = readLines(CUSTOMER_FILE);
-        List<String> newLines = new ArrayList<>();
-
+        List<String> updatedLines = new ArrayList<>();
         boolean found = false;
 
         for (String line : oldLines) {
-
             String[] data = line.split(",");
+            boolean isMatch = data.length > 0 && data[0].equals(id);
 
-            if (data.length > 0 && data[0].equals(id)) {
-
+            if (isMatch) {
                 found = true;
-
-                // If newLine is not null, update the customer
                 if (newLine != null) {
-                    newLines.add(newLine);
+                    updatedLines.add(newLine); // update: keep the new version
                 }
-
+                // delete: newLine is null, so the line is simply dropped
             } else {
-                newLines.add(line);
+                updatedLines.add(line);
             }
         }
 
         if (found) {
-            writeLines(CUSTOMER_FILE, newLines);
+            writeLines(CUSTOMER_FILE, updatedLines);
         }
-
         return found;
     }
 
-    // Delete all meter/bill records of a customer
+    /** Removes every meter or bill line belonging to one customer. */
     private void removeAllForCustomer(String fileName, String id) {
-
-        List<String> newLines = new ArrayList<>();
-
+        List<String> keptLines = new ArrayList<>();
         for (String line : readLines(fileName)) {
-
             String[] data = line.split(",");
-
             if (data.length > 0 && !data[0].equals(id)) {
-                newLines.add(line);
+                keptLines.add(line);
             }
         }
-
-        writeLines(fileName, newLines);
+        writeLines(fileName, keptLines);
     }
 
-    // Convert file data into Meter object
+    /** Both "update a bill's status" and "delete a bill" share this helper too. */
+    private boolean changeBill(String id, String month, String newStatus) {
+        List<String> oldLines = readLines(BILL_FILE);
+        List<String> updatedLines = new ArrayList<>();
+        boolean found = false;
+
+        for (String line : oldLines) {
+            String[] data = line.split(",");
+            boolean isMatch = data.length == 5
+                    && data[0].equals(id)
+                    && data[1].equalsIgnoreCase(month);
+
+            if (!isMatch) {
+                updatedLines.add(line);
+                continue;
+            }
+
+            found = true;
+            if (newStatus != null) {
+                Bill bill = new Bill(data[0], data[1],
+                        Integer.parseInt(data[2]), Integer.parseInt(data[3]), newStatus);
+                updatedLines.add(bill.toFileString()); // update: same bill, new status
+            }
+            // delete: newStatus is null, so the line is simply dropped
+        }
+
+        if (found) {
+            writeLines(BILL_FILE, updatedLines);
+        }
+        return found;
+    }
+
+    // ================= CONVERTING FILE ROWS TO OBJECTS =================
+
     private Meter toMeter(String[] data) {
-        return new Meter(
-                data[0],
-                data[1],
-                Integer.parseInt(data[2]),
-                Integer.parseInt(data[3])
-        );
+        return new Meter(data[0], data[1], Integer.parseInt(data[2]), Integer.parseInt(data[3]));
     }
 
-    // Convert file data into Bill object
     private Bill toBill(String[] data) {
-        return new Bill(
-                data[0],
-                data[1],
-                Integer.parseInt(data[2]),
-                Integer.parseInt(data[3]),
-                data[4]
-        );
+        return new Bill(data[0], data[1], Integer.parseInt(data[2]), Integer.parseInt(data[3]), data[4]);
     }
 
-    // Save a new customer
-    public void saveCustomer(Customer customer)
-            throws DuplicateCustomerException {
+    // ================= CUSTOMER =================
 
+    public void saveCustomer(Customer customer) throws DuplicateCustomerException {
         String id = customer.getCustomerId();
-
         if (isCustomerIdTaken(id)) {
             throw new DuplicateCustomerException(id);
         }
-
         appendLine(CUSTOMER_FILE, customer.toFileString());
     }
 
-    // Check whether customer ID already exists
     public boolean isCustomerIdTaken(String id) {
         return findCustomerById(id) != null;
     }
 
-    // Find customer using ID
     public Customer findCustomerById(String id) {
-
-        List<String[]> rows =
-                readRowsForCustomer(CUSTOMER_FILE, 4, id);
-
+        List<String[]> rows = readRowsForCustomer(CUSTOMER_FILE, 4, id);
         if (rows.isEmpty()) {
             return null;
         }
-
         String[] data = rows.get(0);
-
-        return new Customer(
-                data[0],
-                data[1],
-                data[2],
-                data[3]
-        );
+        return new Customer(data[0], data[1], data[2], data[3]);
     }
 
-    // Update customer information
-    public void updateCustomer(Customer customer)
-            throws CustomerNotFoundException {
-
+    public void updateCustomer(Customer customer) throws CustomerNotFoundException {
         String id = customer.getCustomerId();
-
-        boolean updated =
-                replaceOrDeleteCustomerLine(id, customer.toFileString());
-
+        boolean updated = replaceOrDeleteCustomerLine(id, customer.toFileString());
         if (!updated) {
             throw new CustomerNotFoundException(id);
         }
     }
 
-    // Delete customer and all related records
-    public void deleteCustomer(String id)
-            throws CustomerNotFoundException {
-
-        boolean deleted =
-                replaceOrDeleteCustomerLine(id, null);
-
+    /** Deletes the customer, then cascades to their meters and bills. */
+    public void deleteCustomer(String id) throws CustomerNotFoundException {
+        boolean deleted = replaceOrDeleteCustomerLine(id, null);
         if (!deleted) {
             throw new CustomerNotFoundException(id);
         }
-
         removeAllForCustomer(METER_FILE, id);
         removeAllForCustomer(BILL_FILE, id);
     }
 
-    // Save meter information
+    // ================= METER =================
+
     public void saveMeter(Meter meter) {
         appendLine(METER_FILE, meter.toFileString());
     }
 
-    // Find all meters of a customer
     public List<Meter> findAllMetersByCustomerId(String id) {
-
         List<Meter> meters = new ArrayList<>();
-
-        List<String[]> rows =
-                readRowsForCustomer(METER_FILE, 4, id);
-
-        for (String[] data : rows) {
+        for (String[] data : readRowsForCustomer(METER_FILE, 4, id)) {
             meters.add(toMeter(data));
         }
-
         return meters;
     }
 
-    // Find the latest meter of a customer
+    /** The customer's most recent reading, or null if they have none yet. */
     public Meter findMeterByCustomerId(String id) {
-
-        List<Meter> meters =
-                findAllMetersByCustomerId(id);
-
-        if (meters.isEmpty()) {
-            return null;
-        }
-
-        return meters.get(meters.size() - 1);
+        List<Meter> meters = findAllMetersByCustomerId(id);
+        return meters.isEmpty() ? null : meters.get(meters.size() - 1);
     }
 
-    // Find the first meter that has not been billed
+    /** The first reading that has no matching bill yet. */
     public Meter findNextUnbilledMeter(String id) {
-
         List<Bill> bills = findBillsByCustomerId(id);
-        List<Meter> meters = findAllMetersByCustomerId(id);
-
-        for (Meter meter : meters) {
-
+        for (Meter meter : findAllMetersByCustomerId(id)) {
             if (!isBilled(meter, bills)) {
                 return meter;
             }
         }
-
         return null;
     }
 
-    // Check whether a meter reading is already billed
+    /** A reading is billed once some bill records that exact reading value. */
     private boolean isBilled(Meter meter, List<Bill> bills) {
-
         for (Bill bill : bills) {
-
             if (bill.getReading() == meter.getCurrentReading()) {
                 return true;
             }
         }
-
         return false;
     }
 
-    // Save a bill
+    // ================= BILL =================
+
     public void saveBill(Bill bill) {
         appendLine(BILL_FILE, bill.toFileString());
     }
 
-    // Find all bills of a customer
     public List<Bill> findBillsByCustomerId(String id) {
-
         List<Bill> bills = new ArrayList<>();
-
-        List<String[]> rows =
-                readRowsForCustomer(BILL_FILE, 5, id);
-
-        for (String[] data : rows) {
+        for (String[] data : readRowsForCustomer(BILL_FILE, 5, id)) {
             bills.add(toBill(data));
         }
-
         return bills;
     }
 
-    // Update bill status
-    public boolean updateBillStatus(
-            String id, String month, String newStatus) {
-
+    public boolean updateBillStatus(String id, String month, String newStatus) {
         return changeBill(id, month, newStatus);
     }
 
-    // Delete a bill
     public boolean deleteBill(String id, String month) {
-
         return changeBill(id, month, null);
     }
-
-    // Update or delete a bill
-    private boolean changeBill(
-            String id, String month, String newStatus) {
-
-        List<String> oldLines = readLines(BILL_FILE);
-        List<String> newLines = new ArrayList<>();
-
-        boolean found = false;
-
-        for (String line : oldLines) {
-
-            String[] data = line.split(",");
-
-            boolean match = data.length == 5
-                    && data[0].equals(id)
-                    && data[1].equalsIgnoreCase(month);
-
-            // Keep the line if it is not the required bill
-            if (!match) {
-                newLines.add(line);
-                continue;
-            }
-
-            found = true;
-
-            // If newStatus is not null, update the bill
-            if (newStatus != null) {
-
-                Bill bill = new Bill(
-                        data[0],
-                        data[1],
-                        Integer.parseInt(data[2]),
-                        Integer.parseInt(data[3]),
-                        newStatus
-                );
-
-                newLines.add(bill.toFileString());
-            }
-        }
-
-        if (found) {
-            writeLines(BILL_FILE, newLines);
-        }
-
-        return found;
-    }
 }
-```
-
-This version keeps the **same behavior and output messages** while making the structure and comments easier to follow. I also kept the existing method names so it should remain compatible with your `Customer`, `Meter`, and `Bill` classes.
