@@ -5,7 +5,7 @@ public class Customer extends Record {
     private String meterNumber;
 
     public Customer(String customerId, String name, String address, String meterNumber) {
-        super(customerId); // customerId gets stored as "id" in Record
+        super(customerId);
         this.name = name;
         this.address = address;
         this.meterNumber = meterNumber;
@@ -47,8 +47,6 @@ public class Customer extends Record {
         System.out.println("Meter Number: " + meterNumber);
     }
 
-    // Turns the customer into one comma separated line, e.g:
-    // C001,John Doe,123 Main St,MTR-99
     @Override
     public String toFileString() {
         return id + "," + name + "," + address + "," + meterNumber;
