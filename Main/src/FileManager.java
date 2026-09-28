@@ -50,8 +50,7 @@ public class FileManager {
         }
     }
 
-    // Replaces the first line whose column[idIndex] matches id with newLine.
-    // If newLine is null, the matching line is removed instead. Returns true if a match was found.
+
     private boolean replaceOrDelete(String path, int idIndex, String id, String newLine) {
         List<String> result = new ArrayList<>();
         boolean found = false;
