@@ -31,16 +31,14 @@ public class Meter extends Record {
         return currentReading - previousReading;
     }
 
-    @Override
     public void displayInfo() {
         System.out.println("Customer ID: " + id);
         System.out.println("Meter Number: " + meterNumber);
         System.out.println("Previous Reading: " + previousReading);
         System.out.println("Current Reading: " + currentReading);
-        System.out.println("Units Used: " + getUnitsUsed());
+        System.out.println("Units Used: " + (currentReading - previousReading));
     }
 
-    @Override
     public String toFileString() {
         return id + "," + meterNumber + "," + previousReading + "," + currentReading;
     }
