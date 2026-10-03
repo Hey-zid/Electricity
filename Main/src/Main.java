@@ -1,21 +1,44 @@
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * SmartElectricity Management System - GUI entry point.
+ * IMPORTANT: this file must be saved exactly as "Main.java".
+ */
 public class Main extends JFrame {
 
+    private final FileManager fileManager = new FileManager();
     private static final double RATE_PER_UNIT = 5.0;
 
-    private final FileManager fileManager = new FileManager();
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel container = new JPanel(cardLayout);
 
+    // ================= THEME CONSTANTS =================
+    private static final Color BG_DARK     = new Color(0x13, 0x13, 0x1B);
+    private static final Color BG_PANEL    = new Color(0x1B, 0x1B, 0x26);
+    private static final Color BG_PANEL_2  = new Color(0x0C, 0x0C, 0x12);
+    private static final Color GOLD        = new Color(0xC9, 0xA0, 0x50);
+    private static final Color GOLD_LIGHT  = new Color(0xE8, 0xC7, 0x7D);
+    private static final Color CREAM       = new Color(0xF4, 0xEF, 0xE6);
+    private static final Color MUTED       = new Color(0xA2, 0x9D, 0x92);
+
+    private static final Font FONT_TITLE  = new Font("Cambria", Font.BOLD, 26);
+    private static final Font FONT_HEADER = new Font("Cambria", Font.BOLD, 20);
+    private static final Font FONT_LABEL  = new Font("Calibri", Font.PLAIN, 14);
+    private static final Font FONT_BTN    = new Font("Calibri", Font.BOLD, 14);
+    private static final Font FONT_MONO   = new Font("Courier New", Font.PLAIN, 13);
+
     public Main() {
-        setTitle("Electricity Management System");
-        setSize(650, 500);
+        setTitle("SmartElectricity Management System");
+        setSize(760, 560);
+        setMinimumSize(new Dimension(680, 500));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        getContentPane().setBackground(BG_DARK);
 
+        container.setBackground(BG_DARK);
         container.add(buildHomePanel(), "home");
         container.add(buildRegisterPanel(), "register");
         container.add(buildSearchPanel(), "search");
@@ -28,69 +51,174 @@ public class Main extends JFrame {
         container.add(buildReportPanel(), "report");
 
         add(container);
-        showPage("home");
+        cardLayout.show(container, "home");
     }
 
-    private void showPage(String name) {
-        cardLayout.show(container, name);
+    // ================= REUSABLE UI BUILDING BLOCKS =================
+
+    private JButton goldButton(String text) {
+        JButton b = new JButton(text);
+        styleButtonBase(b, GOLD, BG_DARK, GOLD_LIGHT);
+        return b;
     }
 
-    private JPanel createForm(int rows) {
-        return new JPanel(new GridLayout(rows, 2, 5, 5));
+    private JButton ghostButton(String text) {
+        JButton b = new JButton(text);
+        styleButtonBase(b, BG_PANEL, CREAM, BG_PANEL);
+        b.setBorder(new CompoundBorder(new LineBorder(GOLD, 1, true),
+                BorderFactory.createEmptyBorder(8, 18, 8, 18)));
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { b.setForeground(GOLD_LIGHT); }
+            public void mouseExited(java.awt.event.MouseEvent e)  { b.setForeground(CREAM); }
+        });
+        return b;
     }
 
-    private JTextField addField(JPanel form, String label) {
-        JTextField field = new JTextField();
-        form.add(new JLabel(label));
+    private void styleButtonBase(JButton b, Color bg, Color fg, Color hoverBg) {
+        b.setFont(FONT_BTN);
+        b.setBackground(bg);
+        b.setForeground(fg);
+        b.setFocusPainted(false);
+        b.setOpaque(true);
+        b.setContentAreaFilled(true);
+        b.setBorder(BorderFactory.createEmptyBorder(8, 18, 8, 18));
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        final Color base = bg;
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { b.setBackground(hoverBg); }
+            public void mouseExited(java.awt.event.MouseEvent e)  { b.setBackground(base); }
+        });
+    }
+
+    private JButton buildBackButton() {
+        JButton back = ghostButton("Back to Home");
+        back.addActionListener(e -> cardLayout.show(container, "home"));
+        return back;
+    }
+
+    private JLabel styledLabel(String text) {
+        JLabel l = new JLabel(text);
+        l.setFont(FONT_LABEL);
+        l.setForeground(CREAM);
+        return l;
+    }
+
+    private JTextField styledField() {
+        JTextField f = new JTextField();
+        f.setFont(FONT_LABEL);
+        f.setBackground(BG_PANEL);
+        f.setForeground(CREAM);
+        f.setCaretColor(GOLD_LIGHT);
+        f.setBorder(new CompoundBorder(new LineBorder(MUTED, 1),
+                BorderFactory.createEmptyBorder(5, 8, 5, 8)));
+        return f;
+    }
+
+    private JTextArea styledOutput(int rows, int cols) {
+        JTextArea area = new JTextArea(rows, cols);
+        area.setEditable(false);
+        area.setFont(FONT_MONO);
+        area.setBackground(BG_PANEL_2);
+        area.setForeground(GOLD_LIGHT);
+        area.setCaretColor(GOLD_LIGHT);
+        area.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        return area;
+    }
+
+    private JPanel formGrid(int rows) {
+        JPanel form = new JPanel(new GridLayout(rows, 2, 10, 10));
+        form.setBackground(BG_DARK);
+        form.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        return form;
+    }
+
+    private void addRow(JPanel form, String labelText, JTextField field) {
+        form.add(styledLabel(labelText));
         form.add(field);
-        return field;
     }
 
-    private JTextArea createOutput() {
-        JTextArea output = new JTextArea(6, 40);
-        output.setEditable(false);
-        return output;
-    }
-
-    private boolean isValidStatus(String status) {
-        return status.equalsIgnoreCase("Paid") || status.equalsIgnoreCase("Unpaid");
-    }
-
-    private JPanel buildPageFrame(String title, JPanel form, JTextArea output, JButton... actionButtons) {
-        JPanel page = new JPanel(new BorderLayout(10, 10));
-        page.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-
-        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-        page.add(titleLabel, BorderLayout.NORTH);
-
-        JPanel center = new JPanel(new BorderLayout(10, 10));
-        center.add(form, BorderLayout.NORTH);
-        center.add(new JScrollPane(output), BorderLayout.CENTER);
-        page.add(center, BorderLayout.CENTER);
-
-        JPanel buttonRow = new JPanel();
-        for (JButton button : actionButtons) {
-            buttonRow.add(button);
+    /** True if any of the given fields is empty or only spaces. */
+    private boolean anyBlank(JTextField... fields) {
+        for (JTextField f : fields) {
+            if (f.getText().trim().isEmpty()) return true;
         }
+        return false;
+    }
 
-        JButton backButton = new JButton("Back to Home");
-        backButton.addActionListener(e -> showPage("home"));
-        buttonRow.add(backButton);
-        page.add(buttonRow, BorderLayout.SOUTH);
+    private JPanel buildPageFrame(String title, JComponent formArea, JTextArea output, JButton... actionButtons) {
+        JPanel page = new JPanel(new BorderLayout(10, 15));
+        page.setBackground(BG_DARK);
+        page.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        page.add(pageHeader(title), BorderLayout.NORTH);
+
+        JPanel card = new JPanel(new BorderLayout(10, 10));
+        card.setBackground(BG_DARK);
+        card.add(formArea, BorderLayout.NORTH);
+
+        JScrollPane scroll = new JScrollPane(output);
+        scroll.setBorder(new LineBorder(MUTED, 1));
+        card.add(scroll, BorderLayout.CENTER);
+        page.add(card, BorderLayout.CENTER);
+
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        bottom.setBackground(BG_DARK);
+        for (JButton b : actionButtons) bottom.add(b);
+        bottom.add(buildBackButton());
+        page.add(bottom, BorderLayout.SOUTH);
 
         return page;
     }
 
+    private JPanel pageHeader(String title) {
+        JPanel header = new JPanel(new BorderLayout());
+        header.setBackground(BG_DARK);
+
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setFont(FONT_HEADER);
+        titleLabel.setForeground(CREAM);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        header.add(titleLabel, BorderLayout.CENTER);
+
+        JPanel divider = new JPanel();
+        divider.setBackground(GOLD);
+        divider.setPreferredSize(new Dimension(10, 2));
+        header.add(divider, BorderLayout.SOUTH);
+
+        return header;
+    }
+
+    // ================= HOME PAGE =================
+
     private JPanel buildHomePanel() {
         JPanel page = new JPanel(new BorderLayout());
-        page.setBorder(BorderFactory.createEmptyBorder(30, 60, 30, 60));
+        page.setBackground(BG_DARK);
+        page.setBorder(BorderFactory.createEmptyBorder(35, 60, 30, 60));
 
-        JLabel title = new JLabel("Electricity Management System", SwingConstants.CENTER);
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-        page.add(title, BorderLayout.NORTH);
+        JPanel titleBlock = new JPanel();
+        titleBlock.setLayout(new BoxLayout(titleBlock, BoxLayout.Y_AXIS));
+        titleBlock.setBackground(BG_DARK);
 
-        String[][] menuItems = {
+        JLabel title = new JLabel("SmartElectricity Management System");
+        title.setFont(FONT_TITLE);
+        title.setForeground(CREAM);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel subtitle = new JLabel("Customer, Meter & Billing Console");
+        subtitle.setFont(FONT_LABEL);
+        subtitle.setForeground(GOLD_LIGHT);
+        subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        subtitle.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+
+        titleBlock.add(title);
+        titleBlock.add(subtitle);
+        page.add(titleBlock, BorderLayout.NORTH);
+
+        JPanel buttonGrid = new JPanel(new GridLayout(0, 3, 18, 18));
+        buttonGrid.setBackground(BG_DARK);
+        buttonGrid.setBorder(BorderFactory.createEmptyBorder(35, 0, 35, 0));
+
+        String[][] buttons = {
                 {"Register Customer", "register"},
                 {"Search Customer", "search"},
                 {"Update Customer", "update"},
@@ -102,122 +230,156 @@ public class Main extends JFrame {
                 {"Annual Bill Report", "report"}
         };
 
-        JPanel buttonGrid = new JPanel(new GridLayout(0, 2, 15, 15));
-        buttonGrid.setBorder(BorderFactory.createEmptyBorder(30, 0, 30, 0));
-        for (String[] item : menuItems) {
-            JButton button = new JButton(item[0]);
-            button.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            button.addActionListener(e -> showPage(item[1]));
-            buttonGrid.add(button);
+        for (String[] b : buttons) {
+            JButton btn = ghostButton(b[0]);
+            btn.addActionListener(e -> cardLayout.show(container, b[1]));
+            buttonGrid.add(btn);
         }
+
         page.add(buttonGrid, BorderLayout.CENTER);
 
-        JButton exitButton = new JButton("Exit");
-        exitButton.addActionListener(e -> System.exit(0));
-        JPanel bottomRow = new JPanel();
-        bottomRow.add(exitButton);
-        page.add(bottomRow, BorderLayout.SOUTH);
+        JButton exitBtn = goldButton("Exit");
+        exitBtn.addActionListener(e -> System.exit(0));
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        bottom.setBackground(BG_DARK);
+        bottom.add(exitBtn);
+        page.add(bottom, BorderLayout.SOUTH);
 
         return page;
     }
 
+    // ================= CUSTOMER: REGISTER =================
+
     private JPanel buildRegisterPanel() {
-        JPanel form = createForm(4);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextField nameField = addField(form, "Name:");
-        JTextField addressField = addField(form, "Address:");
-        JTextField meterField = addField(form, "Meter Number:");
-        JTextArea output = createOutput();
+        JPanel form = formGrid(4);
+        JTextField idField = styledField();
+        JTextField nameField = styledField();
+        JTextField addressField = styledField();
+        JTextField meterField = styledField();
 
-        JButton registerButton = new JButton("Register");
-        registerButton.addActionListener(e -> {
+        addRow(form, "Customer ID:", idField);
+        addRow(form, "Name:", nameField);
+        addRow(form, "Address:", addressField);
+        addRow(form, "Meter Number:", meterField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton registerBtn = goldButton("Register");
+        registerBtn.addActionListener(e -> {
+            if (anyBlank(idField, nameField, addressField, meterField)) {
+                output.setText("Error: Please fill in all fields.");
+                return;
+            }
             try {
-                Customer customer = new Customer(idField.getText(), nameField.getText(),
-                        addressField.getText(), meterField.getText());
-                fileManager.saveCustomer(customer);
+                Customer c = new Customer(idField.getText().trim(), nameField.getText().trim(),
+                        addressField.getText().trim(), meterField.getText().trim());
+                fileManager.saveCustomer(c);
                 output.setText("Customer registered successfully!");
-
-                idField.setText("");
-                nameField.setText("");
-                addressField.setText("");
-                meterField.setText("");
+                idField.setText(""); nameField.setText("");
+                addressField.setText(""); meterField.setText("");
             } catch (FileManager.DuplicateCustomerException ex) {
                 output.setText(ex.getMessage());
             }
         });
 
-        return buildPageFrame("Register New Customer", form, output, registerButton);
+        return buildPageFrame("Register New Customer", form, output, registerBtn);
     }
+
+    // ================= CUSTOMER: SEARCH =================
 
     private JPanel buildSearchPanel() {
-        JPanel form = createForm(1);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextArea output = createOutput();
+        JPanel form = formGrid(1);
+        JTextField idField = styledField();
+        addRow(form, "Customer ID:", idField);
 
-        JButton searchButton = new JButton("Search");
-        searchButton.addActionListener(e -> {
-            Customer customer = fileManager.findCustomerById(idField.getText());
-            if (customer == null) {
+        JTextArea output = styledOutput(6, 40);
+
+        JButton searchBtn = goldButton("Search");
+        searchBtn.addActionListener(e -> {
+            Customer c = fileManager.findCustomerById(idField.getText());
+            if (c == null) {
                 output.setText("Customer not found.");
-                return;
+            } else {
+                output.setText("Customer ID: " + c.getCustomerId() +
+                        "\nName: " + c.getName() +
+                        "\nAddress: " + c.getAddress() +
+                        "\nMeter Number: " + c.getMeterNumber());
             }
-            output.setText("Customer ID: " + customer.getCustomerId() +
-                    "\nName: " + customer.getName() +
-                    "\nAddress: " + customer.getAddress() +
-                    "\nMeter Number: " + customer.getMeterNumber());
         });
 
-        return buildPageFrame("Search Customer", form, output, searchButton);
+        return buildPageFrame("Search Customer", form, output, searchBtn);
     }
 
-    private JPanel buildUpdatePanel() {
-        JPanel form = createForm(4);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextField nameField = addField(form, "New Name:");
-        JTextField addressField = addField(form, "New Address:");
-        JTextField meterField = addField(form, "New Meter Number:");
-        JTextArea output = createOutput();
+    // ================= CUSTOMER: UPDATE =================
 
-        JButton loadButton = new JButton("Load Current Info");
-        loadButton.addActionListener(e -> {
-            Customer customer = fileManager.findCustomerById(idField.getText());
-            if (customer == null) {
+    private JPanel buildUpdatePanel() {
+        JPanel form = formGrid(4);
+        JTextField idField = styledField();
+        JTextField nameField = styledField();
+        JTextField addressField = styledField();
+        JTextField meterField = styledField();
+
+        addRow(form, "Customer ID:", idField);
+        addRow(form, "New Name:", nameField);
+        addRow(form, "New Address:", addressField);
+        addRow(form, "New Meter Number:", meterField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton loadBtn = ghostButton("Load Current Info");
+        JButton updateBtn = goldButton("Update");
+
+        loadBtn.addActionListener(e -> {
+            Customer c = fileManager.findCustomerById(idField.getText());
+            if (c == null) {
                 output.setText("Customer not found.");
-                return;
+            } else {
+                nameField.setText(c.getName());
+                addressField.setText(c.getAddress());
+                meterField.setText(c.getMeterNumber());
+                output.setText("Current info loaded. Edit the fields above, then click Update.");
             }
-            nameField.setText(customer.getName());
-            addressField.setText(customer.getAddress());
-            meterField.setText(customer.getMeterNumber());
-            output.setText("Current info loaded. Edit the fields above, then click Update.");
         });
 
-        JButton updateButton = new JButton("Update");
-        updateButton.addActionListener(e -> {
+        updateBtn.addActionListener(e -> {
+            if (anyBlank(idField, nameField, addressField, meterField)) {
+                output.setText("Error: Please fill in all fields.");
+                return;
+            }
             try {
-                Customer customer = new Customer(idField.getText(), nameField.getText(),
-                        addressField.getText(), meterField.getText());
-                fileManager.updateCustomer(customer);
+                Customer c = new Customer(idField.getText().trim(), nameField.getText().trim(),
+                        addressField.getText().trim(), meterField.getText().trim());
+                fileManager.updateCustomer(c);
                 output.setText("Customer updated successfully!");
             } catch (FileManager.CustomerNotFoundException ex) {
                 output.setText(ex.getMessage());
             }
         });
 
-        return buildPageFrame("Update Customer", form, output, loadButton, updateButton);
+        return buildPageFrame("Update Customer", form, output, loadBtn, updateBtn);
     }
 
-    private JPanel buildDeletePanel() {
-        JPanel form = createForm(1);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextArea output = createOutput();
+    // ================= CUSTOMER: DELETE =================
 
-        JButton deleteButton = new JButton("Delete");
-        deleteButton.addActionListener(e -> {
-            int choice = JOptionPane.showConfirmDialog(this,
-                    "Delete customer " + idField.getText() + " and all their records?",
+    private JPanel buildDeletePanel() {
+        JPanel form = formGrid(1);
+        JTextField idField = styledField();
+        addRow(form, "Customer ID:", idField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton deleteBtn = goldButton("Delete");
+        deleteBtn.addActionListener(e -> {
+            if (anyBlank(idField)) {
+                output.setText("Error: Please enter a Customer ID.");
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Delete customer " + idField.getText().trim() + " and all their records?",
                     "Confirm Delete", JOptionPane.YES_NO_OPTION);
 
-            if (choice != JOptionPane.YES_OPTION) {
+            if (confirm != JOptionPane.YES_OPTION) {
                 output.setText("Delete cancelled.");
                 return;
             }
@@ -231,17 +393,23 @@ public class Main extends JFrame {
             }
         });
 
-        return buildPageFrame("Delete Customer", form, output, deleteButton);
+        return buildPageFrame("Delete Customer", form, output, deleteBtn);
     }
 
-    private JPanel buildMeterPanel() {
-        JPanel form = createForm(2);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextField readingField = addField(form, "Current Reading:");
-        JTextArea output = createOutput();
+    // ================= METER: ADD READING =================
 
-        JButton addButton = new JButton("Add Meter Reading");
-        addButton.addActionListener(e -> {
+    private JPanel buildMeterPanel() {
+        JPanel form = formGrid(2);
+        JTextField idField = styledField();
+        JTextField currentField = styledField();
+
+        addRow(form, "Customer ID:", idField);
+        addRow(form, "Current Reading:", currentField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton addBtn = goldButton("Add Meter Reading");
+        addBtn.addActionListener(e -> {
             Customer customer = fileManager.findCustomerById(idField.getText());
             if (customer == null) {
                 output.setText("Error: Customer does not exist.");
@@ -249,8 +417,7 @@ public class Main extends JFrame {
             }
 
             try {
-                int currentReading = Integer.parseInt(readingField.getText());
-
+                int currentReading = Integer.parseInt(currentField.getText().trim());
                 Meter lastMeter = fileManager.findMeterByCustomerId(idField.getText());
                 int previousReading = (lastMeter == null) ? 0 : lastMeter.getCurrentReading();
 
@@ -260,33 +427,51 @@ public class Main extends JFrame {
                     return;
                 }
 
-                Meter meter = new Meter(idField.getText(), customer.getMeterNumber(),
+                Meter meter = new Meter(customer.getCustomerId(), customer.getMeterNumber(),
                         previousReading, currentReading);
                 fileManager.saveMeter(meter);
-
                 output.setText("Reading saved!\nPrevious: " + previousReading +
                         "\nCurrent: " + currentReading +
                         "\nUnits Used: " + meter.getUnitsUsed());
-                readingField.setText("");
+                currentField.setText("");
             } catch (NumberFormatException ex) {
                 output.setText("Error: Please enter a valid number for the reading.");
             }
         });
 
-        return buildPageFrame("Add Meter Reading", form, output, addButton);
+        return buildPageFrame("Add Meter Reading", form, output, addBtn);
     }
 
-    private JPanel buildBillAddPanel() {
-        JPanel form = createForm(3);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextField monthField = addField(form, "Month:");
-        JTextField statusField = addField(form, "Status (Paid/Unpaid):");
-        JTextArea output = createOutput();
+    // ================= BILL: ADD =================
 
-        JButton addButton = new JButton("Add Bill");
-        addButton.addActionListener(e -> {
-            if (fileManager.findCustomerById(idField.getText()) == null) {
+    private JPanel buildBillAddPanel() {
+        JPanel form = formGrid(3);
+        JTextField idField = styledField();
+        JTextField monthField = styledField();
+        JTextField statusField = styledField();
+
+        addRow(form, "Customer ID:", idField);
+        addRow(form, "Month:", monthField);
+        addRow(form, "Status (Paid/Unpaid):", statusField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton addBtn = goldButton("Add Bill");
+        addBtn.addActionListener(e -> {
+            Customer customer = fileManager.findCustomerById(idField.getText());
+            if (customer == null) {
                 output.setText("Error: Customer does not exist.");
+                return;
+            }
+
+            if (anyBlank(monthField)) {
+                output.setText("Error: Please enter the month.");
+                return;
+            }
+
+            String status = statusField.getText().trim();
+            if (!status.equalsIgnoreCase("Paid") && !status.equalsIgnoreCase("Unpaid")) {
+                output.setText("Error: Status must be 'Paid' or 'Unpaid'.");
                 return;
             }
 
@@ -296,71 +481,80 @@ public class Main extends JFrame {
                 return;
             }
 
-            if (!isValidStatus(statusField.getText())) {
-                output.setText("Error: Status must be 'Paid' or 'Unpaid'.");
-                return;
-            }
-
-            Bill bill = new Bill(idField.getText(), monthField.getText(),
-                    meter.getUnitsUsed(), meter.getCurrentReading(), statusField.getText());
+            Bill bill = new Bill(customer.getCustomerId(), monthField.getText().trim(),
+                    meter.getUnitsUsed(), meter.getCurrentReading(), status);
             fileManager.saveBill(bill);
 
-            double amount = bill.getUnitsUsed() * RATE_PER_UNIT;
+            double cost = bill.getUnitsUsed() * RATE_PER_UNIT;
             output.setText("Bill created!\nUnits: " + bill.getUnitsUsed() +
                     "\nReading: " + bill.getReading() +
-                    "\nAmount: " + amount + " Taka" +
+                    "\nAmount: " + cost + " Taka" +
                     "\nStatus: " + bill.getStatus());
         });
 
-        return buildPageFrame("Add Monthly Bill", form, output, addButton);
+        return buildPageFrame("Add Monthly Bill", form, output, addBtn);
     }
 
-    private JPanel buildBillUpdatePanel() {
-        JPanel form = createForm(3);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextField monthField = addField(form, "Month:");
-        JTextField statusField = addField(form, "New Status (Paid/Unpaid):");
-        JTextArea output = createOutput();
+    // ================= BILL: UPDATE STATUS =================
 
-        JButton updateButton = new JButton("Update Status");
-        updateButton.addActionListener(e -> {
-            if (!isValidStatus(statusField.getText())) {
+    private JPanel buildBillUpdatePanel() {
+        JPanel form = formGrid(3);
+        JTextField idField = styledField();
+        JTextField monthField = styledField();
+        JTextField statusField = styledField();
+
+        addRow(form, "Customer ID:", idField);
+        addRow(form, "Month:", monthField);
+        addRow(form, "New Status (Paid/Unpaid):", statusField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton updateBtn = goldButton("Update Status");
+        updateBtn.addActionListener(e -> {
+            String status = statusField.getText().trim();
+            if (!status.equalsIgnoreCase("Paid") && !status.equalsIgnoreCase("Unpaid")) {
                 output.setText("Error: Status must be 'Paid' or 'Unpaid'.");
                 return;
             }
-            boolean updated = fileManager.updateBillStatus(
-                    idField.getText(), monthField.getText(), statusField.getText());
-            output.setText(updated ? "Bill status updated." : "Error: Bill not found.");
+            boolean success = fileManager.updateBillStatus(idField.getText(), monthField.getText(), status);
+            output.setText(success ? "Bill status updated." : "Error: Bill not found.");
         });
 
-        return buildPageFrame("Update Bill Status", form, output, updateButton);
+        return buildPageFrame("Update Bill Status", form, output, updateBtn);
     }
+
+    // ================= BILL: DELETE =================
 
     private JPanel buildBillDeletePanel() {
-        JPanel form = createForm(2);
-        JTextField idField = addField(form, "Customer ID:");
-        JTextField monthField = addField(form, "Month:");
-        JTextArea output = createOutput();
+        JPanel form = formGrid(2);
+        JTextField idField = styledField();
+        JTextField monthField = styledField();
 
-        JButton deleteButton = new JButton("Delete Bill");
-        deleteButton.addActionListener(e -> {
-            boolean deleted = fileManager.deleteBill(idField.getText(), monthField.getText());
-            output.setText(deleted ? "Bill deleted." : "Error: Bill not found.");
+        addRow(form, "Customer ID:", idField);
+        addRow(form, "Month:", monthField);
+
+        JTextArea output = styledOutput(6, 40);
+
+        JButton deleteBtn = goldButton("Delete Bill");
+        deleteBtn.addActionListener(e -> {
+            boolean success = fileManager.deleteBill(idField.getText(), monthField.getText());
+            output.setText(success ? "Bill deleted." : "Error: Bill not found.");
         });
 
-        return buildPageFrame("Delete Bill", form, output, deleteButton);
+        return buildPageFrame("Delete Bill", form, output, deleteBtn);
     }
 
+    // ================= ANNUAL REPORT =================
+
     private JPanel buildReportPanel() {
-        JPanel form = createForm(1);
-        JTextField idField = addField(form, "Customer ID:");
+        JPanel form = formGrid(1);
+        JTextField idField = styledField();
+        addRow(form, "Customer ID:", idField);
 
-        JTextArea output = new JTextArea(14, 50);
-        output.setEditable(false);
-        output.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        JTextArea output = styledOutput(14, 50);
 
-        JButton generateButton = new JButton("Generate Report");
-        generateButton.addActionListener(e -> {
+        JButton generateBtn = goldButton("Generate Report");
+        generateBtn.addActionListener(e -> {
             Customer customer = fileManager.findCustomerById(idField.getText());
             if (customer == null) {
                 output.setText("Error: Customer does not exist.");
@@ -373,51 +567,43 @@ public class Main extends JFrame {
                 return;
             }
 
-            output.setText(createReport(customer, bills));
+            StringBuilder sb = new StringBuilder();
+            sb.append("Customer Name: ").append(customer.getName()).append("\n");
+            sb.append("Customer ID: ").append(customer.getCustomerId()).append("\n");
+            sb.append("Address: ").append(customer.getAddress()).append("\n\n");
+            sb.append(String.format("%-15s%-10s%-12s%-12s%-10s%n",
+                    "MONTH", "UNITS", "READING", "AMOUNT", "STATUS"));
+
+            int totalUnits = 0, paidCount = 0, unpaidCount = 0;
+            double totalBilled = 0, totalPaid = 0, totalDue = 0;
+
+            for (Bill bill : bills) {
+                double cost = bill.getUnitsUsed() * RATE_PER_UNIT;
+                sb.append(String.format("%-15s%-10d%-12d%-12.2f%-10s%n",
+                        bill.getMonth(), bill.getUnitsUsed(), bill.getReading(), cost, bill.getStatus()));
+
+                totalUnits += bill.getUnitsUsed();
+                totalBilled += cost;
+                if (bill.getStatus().equalsIgnoreCase("Paid")) {
+                    paidCount++;
+                    totalPaid += cost;
+                } else {
+                    unpaidCount++;
+                    totalDue += cost;
+                }
+            }
+
+            sb.append("\nTotal Units: ").append(totalUnits);
+            sb.append("\nPaid Bills: ").append(paidCount)
+                    .append("   Unpaid Bills: ").append(unpaidCount);
+            sb.append("\nTotal Billed: ").append(totalBilled).append(" Taka");
+            sb.append("\nTotal Paid: ").append(totalPaid).append(" Taka");
+            sb.append("\nTotal Due: ").append(totalDue).append(" Taka");
+
+            output.setText(sb.toString());
         });
 
-        return buildPageFrame("Annual Bill Report", form, output, generateButton);
-    }
-
-    private String createReport(Customer customer, List<Bill> bills) {
-        StringBuilder report = new StringBuilder();
-        report.append("Customer Name: ").append(customer.getName()).append("\n");
-        report.append("Customer ID: ").append(customer.getCustomerId()).append("\n");
-        report.append("Address: ").append(customer.getAddress()).append("\n\n");
-        report.append(String.format("%-15s%-10s%-12s%-12s%-10s%n",
-                "MONTH", "UNITS", "READING", "AMOUNT", "STATUS"));
-
-        int totalUnits = 0;
-        int paidCount = 0;
-        int unpaidCount = 0;
-        double totalBilled = 0;
-        double totalPaid = 0;
-        double totalDue = 0;
-
-        for (Bill bill : bills) {
-            double amount = bill.getUnitsUsed() * RATE_PER_UNIT;
-            report.append(String.format("%-15s%-10d%-12d%-12.2f%-10s%n",
-                    bill.getMonth(), bill.getUnitsUsed(), bill.getReading(), amount, bill.getStatus()));
-
-            totalUnits += bill.getUnitsUsed();
-            totalBilled += amount;
-
-            if (bill.getStatus().equalsIgnoreCase("Paid")) {
-                paidCount++;
-                totalPaid += amount;
-            } else {
-                unpaidCount++;
-                totalDue += amount;
-            }
-        }
-
-        report.append("\nTotal Units: ").append(totalUnits);
-        report.append("\nPaid Bills: ").append(paidCount).append("   Unpaid Bills: ").append(unpaidCount);
-        report.append("\nTotal Billed: ").append(totalBilled).append(" Taka");
-        report.append("\nTotal Paid: ").append(totalPaid).append(" Taka");
-        report.append("\nTotal Due: ").append(totalDue).append(" Taka");
-
-        return report.toString();
+        return buildPageFrame("Annual Bill Report", form, output, generateBtn);
     }
 
     public static void main(String[] args) {
